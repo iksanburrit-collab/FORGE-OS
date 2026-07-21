@@ -4,6 +4,14 @@ COSTOS_CONSTRUCCION = {
     "fundidora": 4,
 }
 
+PRECIOS_VENTA = {
+    "hierro": 2,
+    "carbon": 3,
+    "lingotes": 8,
+    "placas": 12,
+    "engranajes": 30,
+}
+
 NOMBRES = {
     "hierro": "Hierro",
     "carbon": "Carbón",

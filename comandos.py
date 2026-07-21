@@ -1,6 +1,7 @@
 from config import obtener_nombre, normalizar_clave
 from inventario import mostrar_inventario
 from maquinas import mostrar_maquinas, construir_maquina
+from mercado import mostrar_mercado, mostrar_saldo, vender
 from juego import avanzar_turno, fabricar, fundir, mostrar_recetas
 
 
@@ -19,6 +20,9 @@ def mostrar_ayuda():
     )
     print(" - fabricar <cantidad> <producto>: Fabricar un producto")
     print(" - recetas: Mostrar las recetas disponibles")
+    print(" - vender <cantidad> <producto>: Vender productos")
+    print(" - saldo: Mostrar el dinero disponible")
+    print(" - mercado: Mostrar productos y precios de venta")
     print(" - ayuda: Mostrar esta ayuda")
     print(" - salir: Salir del juego")
 
@@ -28,6 +32,24 @@ def procesar_comando(comando):
 
     if comando == "turno":
         avanzar_turno()
+    elif comando.startswith("vender"):
+        partes = comando.split()
+        if len(partes) != 3:
+            print("Formato inválido. Usa: vender <cantidad> <producto>")
+            return True
+
+        try:
+            cantidad = int(partes[1])
+        except ValueError:
+            print("La cantidad debe ser un número entero mayor que cero.")
+            return True
+
+        producto = normalizar_clave(partes[2])
+        vender(producto, cantidad)
+    elif comando == "saldo":
+        mostrar_saldo()
+    elif comando == "mercado":
+        mostrar_mercado()
     elif comando.startswith("fabricar"):
         partes = comando.split()
         if len(partes) != 3:
