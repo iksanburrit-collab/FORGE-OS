@@ -11,9 +11,17 @@ from energia import (
     obtener_energia_almacenada,
     obtener_reporte_energia,
 )
+from eventos import procesar_evento
 from inventario import inventario, trabajar_mina
 from maquinas import maquinas
 from mejoras import niveles_maquinas, obtener_nivel
+from objetivos import (
+    evaluar_objetivos,
+    obtener_estadisticas,
+    registrar_extraccion,
+    registrar_produccion,
+    registrar_turno,
+)
 from recetas import RECETAS
 
 
@@ -131,6 +139,8 @@ def fundir_recursos(recurso, cantidad=1, mostrar_mensaje=True):
         inventario[nombre] -= requerido
     for producto, producido in receta["produce"].items():
         inventario[producto] += producido * cantidad
+    lingotes_producidos = receta["produce"].get("lingotes", 0) * cantidad
+    registrar_produccion(lingotes=lingotes_producidos)
 
     if mostrar_mensaje:
         print(f"Se usaron hierro y carbón para fundir {cantidad} lingote(s).")
@@ -148,6 +158,7 @@ def fundir(mostrar_mensaje=True, recurso=None, cantidad=None):
         )
 
     lingotes_creados = _procesar_fundidoras(maquinas["fundidora"])
+    registrar_produccion(lingotes=lingotes_creados)
 
     if lingotes_creados:
         if mostrar_mensaje:
@@ -180,7 +191,11 @@ def _procesar_fundidoras(cantidad_fundidoras):
     return lingotes_creados
 
 
-def avanzar_turno(mostrar_produccion=True):
+def avanzar_turno(
+    mostrar_produccion=True,
+    evento_id=None,
+    selector_evento=None,
+):
     energia_inicial = obtener_energia_almacenada()
     maquinas_efectivas = obtener_maquinas_efectivas(maquinas)
     reporte = obtener_reporte_energia(maquinas_efectivas, energia_inicial)
@@ -222,11 +237,38 @@ def avanzar_turno(mostrar_produccion=True):
     reporte["automatizacion_activa"] = automatizacion_habilitada
     reporte["niveles_maquinas"] = niveles_maquinas.copy()
     consumir_energia(reporte["energia_utilizada"])
+    energia_tras_consumo = obtener_energia_almacenada()
+    reporte["energia_tras_consumo"] = energia_tras_consumo
+    reporte["energia_restante"] = energia_tras_consumo
+
+    registrar_extraccion(
+        hierro=hierro_producido,
+        carbon=carbon_producido,
+    )
+    registrar_produccion(
+        lingotes=lingotes_automaticos,
+        automaticos=lingotes_automaticos,
+    )
+    nuevos_objetivos = evaluar_objetivos()
+    turno_actual = registrar_turno()
+
+    evento = None
+    if turno_actual % 5 == 0:
+        evento = procesar_evento(
+            evento_id=evento_id,
+            selector=selector_evento,
+        )
+        nuevos_objetivos.extend(evaluar_objetivos())
+
     reporte["energia_restante"] = obtener_energia_almacenada()
+
+    reporte["estadisticas"] = obtener_estadisticas()
+    reporte["objetivos_completados"] = nuevos_objetivos
+    reporte["evento"] = evento
 
     print("\n===== TURNO COMPLETADO =====")
     print(
-        f"Energía: {energia_inicial} -> {reporte['energia_restante']} MW "
+        f"Energía: {energia_inicial} -> {energia_tras_consumo} MW "
         f"(consumo: {reporte['energia_utilizada']} MW)"
     )
 
@@ -264,4 +306,28 @@ def avanzar_turno(mostrar_produccion=True):
         for tipo, cantidad in sin_energia.items():
             print(f" - {cantidad} {obtener_nombre(tipo)}")
 
+    for objetivo in nuevos_objetivos:
+        print("\nObjetivo completado:")
+        print(f" {objetivo['nombre']}")
+        print(
+            " Recompensa: "
+            f"{_formatear_recompensa(objetivo['recompensa'])}"
+        )
+
+    if evento and evento["ok"]:
+        print("\nEvento industrial:")
+        print(f" {evento['nombre']}: {evento['descripcion']}")
+
     return reporte
+
+
+def _formatear_recompensa(recompensa):
+    partes = []
+    for tipo, cantidad in recompensa.items():
+        if tipo == "dinero":
+            partes.append(f"${cantidad}")
+        elif tipo == "energia":
+            partes.append(f"{cantidad} MW")
+        else:
+            partes.append(f"{cantidad} de {obtener_nombre(tipo)}")
+    return ", ".join(partes)

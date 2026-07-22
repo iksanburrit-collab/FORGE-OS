@@ -3,6 +3,11 @@ from contextlib import redirect_stdout
 from copy import deepcopy
 from io import StringIO
 
+from automatizacion import (
+    activar_automatizacion,
+    automatizacion_activa,
+    desactivar_automatizacion,
+)
 from comandos import mostrar_energia, procesar_comando
 from energia import (
     calcular_consumo_maximo,
@@ -15,6 +20,14 @@ from inventario import inventario
 from juego import avanzar_turno
 from maquinas import construir_maquina, maquinas
 from mercado import obtener_saldo
+from mejoras import niveles_maquinas, restaurar_mejoras
+from objetivos import (
+    ESTADISTICAS_INICIALES,
+    OBJETIVOS,
+    estadisticas,
+    objetivos_completados,
+    restaurar_objetivos,
+)
 
 
 class CalculosEnergiaTests(unittest.TestCase):
@@ -90,7 +103,14 @@ class IntegracionEnergiaTests(unittest.TestCase):
         self.inventario_original = deepcopy(inventario)
         self.maquinas_original = deepcopy(maquinas)
         self.energia_original = obtener_energia_almacenada()
+        self.automatizacion_original = automatizacion_activa()
+        self.niveles_originales = deepcopy(niveles_maquinas)
+        self.estadisticas_originales = deepcopy(estadisticas)
+        self.objetivos_originales = set(objetivos_completados)
         establecer_energia_almacenada(10)
+        desactivar_automatizacion()
+        restaurar_mejoras({tipo: 1 for tipo in niveles_maquinas})
+        restaurar_objetivos(ESTADISTICAS_INICIALES, OBJETIVOS)
 
     def tearDown(self):
         inventario.clear()
@@ -98,6 +118,15 @@ class IntegracionEnergiaTests(unittest.TestCase):
         maquinas.clear()
         maquinas.update(self.maquinas_original)
         establecer_energia_almacenada(self.energia_original)
+        if self.automatizacion_original:
+            activar_automatizacion()
+        else:
+            desactivar_automatizacion()
+        restaurar_mejoras(self.niveles_originales)
+        restaurar_objetivos(
+            self.estadisticas_originales,
+            self.objetivos_originales,
+        )
 
     def test_maquinas_sin_energia_no_producen(self):
         maquinas.update({

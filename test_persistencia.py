@@ -20,8 +20,17 @@ from inventario import INVENTARIO_INICIAL, inventario, restaurar_inventario
 from main import iniciar_juego
 from maquinas import MAQUINAS_INICIALES, maquinas, restaurar_maquinas
 from mejoras import NIVELES_INICIALES, niveles_maquinas, restaurar_mejoras
+from objetivos import (
+    ESTADISTICAS_INICIALES,
+    estadisticas,
+    objetivos_completados,
+    restaurar_objetivos,
+)
 from persistencia import (
+    autoguardado_habilitado,
+    borrar_partida_guardada,
     cargar_partida,
+    establecer_autoguardado,
     guardar_partida,
     nueva_partida,
     recopilar_estado,
@@ -43,7 +52,7 @@ class PersistenciaTests(unittest.TestCase):
         estado = recopilar_estado()
 
         self.assertEqual(estado["version_guardado"], 1)
-        self.assertEqual(estado["version_juego"], "0.8")
+        self.assertEqual(estado["version_juego"], "0.9")
         self.assertEqual(
             set(estado),
             {
@@ -55,6 +64,8 @@ class PersistenciaTests(unittest.TestCase):
                 "energia_almacenada",
                 "automatizacion_activa",
                 "niveles_maquinas",
+                "estadisticas",
+                "objetivos_completados",
             },
         )
 
@@ -127,6 +138,31 @@ class PersistenciaTests(unittest.TestCase):
 
         self.assertEqual(niveles_maquinas["mina_hierro"], 3)
 
+    def test_cargar_restaura_estadisticas_y_objetivos(self):
+        datos = self._estado_valido()
+        datos["estadisticas"] = ESTADISTICAS_INICIALES.copy()
+        datos["estadisticas"]["hierro_extraido"] = 25
+        datos["objetivos_completados"] = ["extraer_hierro"]
+        self._escribir(datos)
+
+        resultado = cargar_partida(self.ruta)
+
+        self.assertTrue(resultado["ok"])
+        self.assertEqual(estadisticas["hierro_extraido"], 25)
+        self.assertEqual(objetivos_completados, {"extraer_hierro"})
+
+    def test_guardado_v08_sin_progreso_usa_valores_iniciales(self):
+        datos = self._estado_valido()
+        self._escribir(datos)
+        estadisticas["hierro_extraido"] = 99
+        objetivos_completados.add("extraer_hierro")
+
+        resultado = cargar_partida(self.ruta)
+
+        self.assertTrue(resultado["ok"])
+        self.assertEqual(estadisticas, ESTADISTICAS_INICIALES)
+        self.assertEqual(objetivos_completados, set())
+
     def test_archivo_inexistente(self):
         resultado = cargar_partida(self.ruta)
 
@@ -190,12 +226,21 @@ class PersistenciaTests(unittest.TestCase):
             ("inventario", []),
             ("maquinas", []),
             ("niveles_maquinas", []),
+            ("estadisticas", []),
+            ("objetivos_completados", "extraer_hierro"),
         )
         for clave, valor in casos:
             with self.subTest(clave=clave):
                 datos = self._estado_valido()
                 datos[clave] = valor
                 self.assert_carga_invalida(datos)
+
+    def test_estadistica_negativa_no_modifica_progreso(self):
+        datos = self._estado_valido()
+        datos["estadisticas"] = ESTADISTICAS_INICIALES.copy()
+        datos["estadisticas"]["hierro_extraido"] = -1
+
+        self.assert_carga_invalida(datos)
 
     def test_carga_invalida_no_modifica_estado(self):
         inventario["hierro"] = 9
@@ -273,6 +318,8 @@ class PersistenciaTests(unittest.TestCase):
         self.assertEqual(obtener_energia_almacenada(), 10)
         self.assertFalse(automatizacion_activa())
         self.assertEqual(niveles_maquinas, NIVELES_INICIALES)
+        self.assertEqual(estadisticas, ESTADISTICAS_INICIALES)
+        self.assertEqual(objetivos_completados, set())
 
     def test_nueva_partida_sin_confirmacion_no_modifica_estado(self):
         self._establecer_estado_modificado()
@@ -288,6 +335,54 @@ class PersistenciaTests(unittest.TestCase):
 
         self.assertTrue(self.ruta.is_file())
         self.assertFalse(Path(f"{self.ruta}.tmp").exists())
+
+    def test_borrar_partida_guardada(self):
+        guardar_partida(self.ruta)
+
+        resultado = borrar_partida_guardada(self.ruta)
+
+        self.assertTrue(resultado["ok"])
+        self.assertFalse(self.ruta.exists())
+        self.assertFalse(autoguardado_habilitado())
+
+    def test_borrar_partida_inexistente(self):
+        resultado = borrar_partida_guardada(self.ruta)
+
+        self.assertFalse(resultado["ok"])
+        self.assertEqual(resultado["mensaje"], "No existe una partida guardada.")
+
+    def test_borrar_partida_no_modifica_estado_en_memoria(self):
+        self._establecer_estado_modificado()
+        estado_inicial = self._capturar_estado()
+        guardar_partida(self.ruta)
+
+        borrar_partida_guardada(self.ruta)
+
+        estado_actual = self._capturar_estado()
+        estado_inicial.pop("autoguardado")
+        estado_actual.pop("autoguardado")
+        self.assertEqual(estado_actual, estado_inicial)
+
+    def test_borrar_partida_sin_confirmacion_no_hace_cambios(self):
+        guardar_partida(self.ruta)
+        estado_inicial = self._capturar_estado()
+
+        with redirect_stdout(StringIO()):
+            self.assertTrue(procesar_comando("borrar partida"))
+
+        self.assertTrue(self.ruta.exists())
+        self.assertEqual(self._capturar_estado(), estado_inicial)
+
+    def test_salir_no_recrea_partida_borrada(self):
+        guardar_partida(self.ruta)
+        borrar_partida_guardada(self.ruta)
+
+        with patch("comandos.guardar_partida") as guardar:
+            with redirect_stdout(StringIO()) as salida:
+                self.assertFalse(procesar_comando("salir"))
+
+        guardar.assert_not_called()
+        self.assertIn("Autoguardado omitido", salida.getvalue())
 
     def test_fallo_de_escritura_conserva_guardado_anterior(self):
         contenido_anterior = '{"guardado": "anterior"}'
@@ -364,6 +459,9 @@ class PersistenciaTests(unittest.TestCase):
             "energia": obtener_energia_almacenada(),
             "automatizacion": automatizacion_activa(),
             "niveles": deepcopy(niveles_maquinas),
+            "estadisticas": deepcopy(estadisticas),
+            "objetivos": set(objetivos_completados),
+            "autoguardado": autoguardado_habilitado(),
         }
 
     @staticmethod
@@ -377,6 +475,8 @@ class PersistenciaTests(unittest.TestCase):
         else:
             desactivar_automatizacion()
         restaurar_mejoras(estado["niveles"])
+        restaurar_objetivos(estado["estadisticas"], estado["objetivos"])
+        establecer_autoguardado(estado["autoguardado"])
 
     @staticmethod
     def _establecer_estado_modificado():
@@ -386,6 +486,8 @@ class PersistenciaTests(unittest.TestCase):
         establecer_energia_almacenada(90)
         activar_automatizacion()
         niveles_maquinas["fundidora"] = 3
+        estadisticas["hierro_extraido"] = 25
+        objetivos_completados.add("extraer_hierro")
 
 
 if __name__ == "__main__":

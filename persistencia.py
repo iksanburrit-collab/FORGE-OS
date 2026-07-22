@@ -35,10 +35,29 @@ from mejoras import (
     reiniciar_mejoras,
     restaurar_mejoras,
 )
+from objetivos import (
+    ESTADISTICAS_INICIALES,
+    OBJETIVOS,
+    estadisticas,
+    obtener_objetivos_completados,
+    reiniciar_objetivos,
+    restaurar_objetivos,
+)
 
 
 VERSION_GUARDADO = 1
 RUTA_GUARDADO = Path(__file__).resolve().parent / "datos.json"
+_autoguardado_habilitado = True
+
+
+def autoguardado_habilitado():
+    return _autoguardado_habilitado
+
+
+def establecer_autoguardado(habilitado):
+    global _autoguardado_habilitado
+
+    _autoguardado_habilitado = habilitado
 
 
 def recopilar_estado():
@@ -51,6 +70,8 @@ def recopilar_estado():
         "energia_almacenada": obtener_energia_almacenada(),
         "automatizacion_activa": automatizacion_activa(),
         "niveles_maquinas": niveles_maquinas.copy(),
+        "estadisticas": estadisticas.copy(),
+        "objetivos_completados": obtener_objetivos_completados(),
     }
 
 
@@ -101,6 +122,42 @@ def _validar_niveles(datos):
     return resultado, None
 
 
+def _validar_estadisticas(datos):
+    if datos is None:
+        return ESTADISTICAS_INICIALES.copy(), None
+    if not isinstance(datos, dict):
+        return None, "'estadisticas' debe ser un diccionario."
+
+    resultado = ESTADISTICAS_INICIALES.copy()
+    for clave in ESTADISTICAS_INICIALES:
+        if clave not in datos:
+            continue
+        valor = datos[clave]
+        if (
+            not isinstance(valor, int)
+            or isinstance(valor, bool)
+            or valor < 0
+        ):
+            return None, f"Estadística inválida: '{clave}'."
+        resultado[clave] = valor
+    return resultado, None
+
+
+def _validar_objetivos_completados(datos):
+    if datos is None:
+        return [], None
+    if not isinstance(datos, list):
+        return None, "'objetivos_completados' debe ser una lista."
+    if any(not isinstance(objetivo_id, str) for objetivo_id in datos):
+        return None, "La lista de objetivos contiene tipos inválidos."
+
+    conocidos = []
+    for objetivo_id in OBJETIVOS:
+        if objetivo_id in datos:
+            conocidos.append(objetivo_id)
+    return conocidos, None
+
+
 def validar_estado(datos):
     if not isinstance(datos, dict):
         return {"ok": False, "mensaje": "La raíz debe ser un diccionario."}
@@ -147,6 +204,18 @@ def validar_estado(datos):
     if not isinstance(automatizacion, bool):
         return {"ok": False, "mensaje": "La automatización es inválida."}
 
+    estadisticas_validadas, error = _validar_estadisticas(
+        datos.get("estadisticas")
+    )
+    if error:
+        return {"ok": False, "mensaje": error}
+
+    objetivos_validados, error = _validar_objetivos_completados(
+        datos.get("objetivos_completados")
+    )
+    if error:
+        return {"ok": False, "mensaje": error}
+
     return {
         "ok": True,
         "mensaje": "Estado válido.",
@@ -157,6 +226,8 @@ def validar_estado(datos):
             "energia_almacenada": energia,
             "automatizacion_activa": automatizacion,
             "niveles_maquinas": niveles_validados,
+            "estadisticas": estadisticas_validadas,
+            "objetivos_completados": objetivos_validados,
         },
     }
 
@@ -171,6 +242,10 @@ def _aplicar_estado(estado):
     else:
         desactivar_automatizacion()
     restaurar_mejoras(estado["niveles_maquinas"])
+    restaurar_objetivos(
+        estado.get("estadisticas", ESTADISTICAS_INICIALES),
+        estado.get("objetivos_completados", []),
+    )
 
 
 def guardar_partida(ruta=None):
@@ -195,6 +270,7 @@ def guardar_partida(ruta=None):
             "mensaje": f"No se pudo guardar la partida: {error}",
         }
 
+    establecer_autoguardado(True)
     return {"ok": True, "mensaje": "Partida guardada correctamente."}
 
 
@@ -232,6 +308,7 @@ def cargar_partida(ruta=None):
             "mensaje": "No se pudo cargar la partida de forma segura.",
         }
 
+    establecer_autoguardado(True)
     return {"ok": True, "mensaje": "Partida cargada correctamente."}
 
 
@@ -242,9 +319,28 @@ def nueva_partida():
     reiniciar_energia()
     reiniciar_automatizacion()
     reiniciar_mejoras()
+    reiniciar_objetivos()
+    establecer_autoguardado(True)
     return {"ok": True, "mensaje": "Nueva partida iniciada."}
 
 
 def existe_partida_guardada(ruta=None):
     ruta_guardado = Path(ruta) if ruta is not None else RUTA_GUARDADO
     return ruta_guardado.is_file()
+
+
+def borrar_partida_guardada(ruta=None):
+    ruta_guardado = Path(ruta) if ruta is not None else RUTA_GUARDADO
+
+    try:
+        ruta_guardado.unlink()
+    except FileNotFoundError:
+        return {"ok": False, "mensaje": "No existe una partida guardada."}
+    except OSError as error:
+        return {
+            "ok": False,
+            "mensaje": f"No se pudo borrar la partida guardada: {error}",
+        }
+
+    establecer_autoguardado(False)
+    return {"ok": True, "mensaje": "Partida guardada borrada correctamente."}

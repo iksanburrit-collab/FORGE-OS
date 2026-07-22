@@ -6,6 +6,7 @@ from config import (
     PRIORIDAD_ENERGIA,
 )
 from mejoras import obtener_nivel
+from objetivos import registrar_generacion_energia
 
 
 energia_almacenada = ENERGIA_INICIAL
@@ -54,6 +55,7 @@ def generar_energia(maquinas, inventario):
     if carbon_consumido:
         inventario["carbon"] -= carbon_consumido
     establecer_energia_almacenada(energia_almacenada + energia_generada)
+    registrar_generacion_energia(energia_generada)
 
     return {
         "generadores_disponibles": generadores,

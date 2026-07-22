@@ -9,6 +9,13 @@ from comandos import procesar_comando
 from inventario import inventario
 from maquinas import maquinas
 from mercado import comprar
+from objetivos import (
+    ESTADISTICAS_INICIALES,
+    OBJETIVOS,
+    estadisticas,
+    objetivos_completados,
+    restaurar_objetivos,
+)
 
 
 class ComprasTests(unittest.TestCase):
@@ -16,7 +23,10 @@ class ComprasTests(unittest.TestCase):
         self.inventario_original = deepcopy(inventario)
         self.maquinas_original = deepcopy(maquinas)
         self.dinero_original = mercado.dinero
+        self.estadisticas_originales = deepcopy(estadisticas)
+        self.objetivos_originales = set(objetivos_completados)
         mercado.dinero = 0
+        restaurar_objetivos(ESTADISTICAS_INICIALES, OBJETIVOS)
 
     def tearDown(self):
         inventario.clear()
@@ -24,6 +34,10 @@ class ComprasTests(unittest.TestCase):
         maquinas.clear()
         maquinas.update(self.maquinas_original)
         mercado.dinero = self.dinero_original
+        restaurar_objetivos(
+            self.estadisticas_originales,
+            self.objetivos_originales,
+        )
 
     def test_comprar_material(self):
         mercado.dinero = 20

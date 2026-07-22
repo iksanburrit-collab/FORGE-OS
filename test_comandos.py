@@ -8,15 +8,29 @@ from comandos import procesar_comando
 from inventario import inventario
 from juego import fabricar, fundir
 from main import iniciar_juego
+from objetivos import (
+    ESTADISTICAS_INICIALES,
+    OBJETIVOS,
+    estadisticas,
+    objetivos_completados,
+    restaurar_objetivos,
+)
 
 
 class ValidacionRecetasTests(unittest.TestCase):
     def setUp(self):
         self.inventario_original = deepcopy(inventario)
+        self.estadisticas_originales = deepcopy(estadisticas)
+        self.objetivos_originales = set(objetivos_completados)
+        restaurar_objetivos(ESTADISTICAS_INICIALES, OBJETIVOS)
 
     def tearDown(self):
         inventario.clear()
         inventario.update(self.inventario_original)
+        restaurar_objetivos(
+            self.estadisticas_originales,
+            self.objetivos_originales,
+        )
 
     def test_arranque_y_salida(self):
         salida = StringIO()

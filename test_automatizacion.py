@@ -15,6 +15,14 @@ from energia import establecer_energia_almacenada, obtener_energia_almacenada
 from inventario import inventario
 from juego import avanzar_turno, fundir
 from maquinas import maquinas
+from mejoras import niveles_maquinas, restaurar_mejoras
+from objetivos import (
+    ESTADISTICAS_INICIALES,
+    OBJETIVOS,
+    estadisticas,
+    objetivos_completados,
+    restaurar_objetivos,
+)
 from recetas import RECETAS
 
 
@@ -25,6 +33,9 @@ class AutomatizacionTests(unittest.TestCase):
         self.energia_original = obtener_energia_almacenada()
         self.dinero_original = mercado.dinero
         self.automatizacion_original = automatizacion_activa()
+        self.niveles_originales = deepcopy(niveles_maquinas)
+        self.estadisticas_originales = deepcopy(estadisticas)
+        self.objetivos_originales = set(objetivos_completados)
 
         inventario.update({
             "hierro": 0,
@@ -42,6 +53,8 @@ class AutomatizacionTests(unittest.TestCase):
         establecer_energia_almacenada(10)
         mercado.dinero = 0
         desactivar_automatizacion()
+        restaurar_mejoras({tipo: 1 for tipo in niveles_maquinas})
+        restaurar_objetivos(ESTADISTICAS_INICIALES, OBJETIVOS)
 
     def tearDown(self):
         inventario.clear()
@@ -54,6 +67,11 @@ class AutomatizacionTests(unittest.TestCase):
             activar_automatizacion()
         else:
             desactivar_automatizacion()
+        restaurar_mejoras(self.niveles_originales)
+        restaurar_objetivos(
+            self.estadisticas_originales,
+            self.objetivos_originales,
+        )
 
     def test_automatizacion_desactivada_por_defecto(self):
         self.assertFalse(automatizacion_activa())

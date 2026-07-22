@@ -17,7 +17,20 @@ from mercado import (
     vender,
 )
 from mejoras import mejorar_maquina, obtener_reporte_mejoras
-from persistencia import cargar_partida, guardar_partida, nueva_partida
+from objetivos import (
+    OBJETIVOS,
+    evaluar_objetivos,
+    obtener_estadisticas,
+    obtener_estado_objetivos,
+    obtener_objetivos_completados,
+)
+from persistencia import (
+    autoguardado_habilitado,
+    borrar_partida_guardada,
+    cargar_partida,
+    guardar_partida,
+    nueva_partida,
+)
 from juego import avanzar_turno, fabricar, fundir, mostrar_recetas
 
 
@@ -54,6 +67,9 @@ def mostrar_ayuda():
     print(" - guardar: Guardar la partida")
     print(" - cargar: Cargar la partida guardada")
     print(" - nueva partida confirmar: Reiniciar todo el progreso")
+    print(" - borrar partida confirmar: Borrar el archivo guardado")
+    print(" - objetivos: Mostrar objetivos pendientes y completados")
+    print(" - progreso: Mostrar estadísticas acumuladas")
     print(" - ayuda: Mostrar esta ayuda")
     print(" - salir: Salir del juego")
 
@@ -77,16 +93,19 @@ def procesar_comando(comando):
 
         producto = normalizar_clave(partes[2])
         vender(producto, cantidad)
+        _evaluar_y_mostrar_objetivos()
     elif comando == "saldo":
         mostrar_saldo()
     elif comando == "mercado":
         mostrar_mercado()
     elif comando == "comprar":
         mostrar_menu_compra()
+        _evaluar_y_mostrar_objetivos()
     elif comando == "energia":
         mostrar_energia()
     elif comando == "generar energia":
         ejecutar_generacion_energia()
+        _evaluar_y_mostrar_objetivos()
     elif comando in {"automatizacion", "automatización"}:
         mostrar_automatizacion()
     elif comando in {
@@ -123,6 +142,11 @@ def procesar_comando(comando):
         tipo = normalizar_clave(" ".join(partes[1:]))
         reporte = mejorar_maquina(tipo)
         mostrar_resultado_mejora(reporte)
+        _evaluar_y_mostrar_objetivos()
+    elif comando == "objetivos":
+        mostrar_objetivos()
+    elif comando == "progreso":
+        mostrar_progreso()
     elif comando == "guardar":
         print(guardar_partida()["mensaje"])
     elif comando == "cargar":
@@ -136,6 +160,15 @@ def procesar_comando(comando):
         )
     elif comando.startswith("nueva partida"):
         print("Formato inválido. Usa: nueva partida confirmar")
+    elif comando == "borrar partida confirmar":
+        print(borrar_partida_guardada()["mensaje"])
+    elif comando == "borrar partida":
+        print(
+            "Esta acción borrará el archivo guardado. "
+            "Usa: borrar partida confirmar"
+        )
+    elif comando.startswith("borrar partida"):
+        print("Formato inválido. Usa: borrar partida confirmar")
     elif comando.startswith("fabricar"):
         partes = comando.split()
         if len(partes) != 3:
@@ -150,6 +183,7 @@ def procesar_comando(comando):
 
         producto = normalizar_clave(partes[2])
         fabricar(producto, cantidad)
+        _evaluar_y_mostrar_objetivos()
     elif comando == "recetas":
         mostrar_recetas()
     elif comando.startswith("fundir"):
@@ -159,6 +193,7 @@ def procesar_comando(comando):
             entrada_cantidad = input("¿Cuántos quieres fundir? ").strip()
             if not entrada_cantidad:
                 fundir()
+                _evaluar_y_mostrar_objetivos()
                 return True
 
             try:
@@ -174,6 +209,7 @@ def procesar_comando(comando):
 
             recurso = normalizar_clave(recurso)
             fundir(recurso=recurso, cantidad=cantidad)
+            _evaluar_y_mostrar_objetivos()
         elif len(partes) == 3:
             try:
                 cantidad = int(partes[1])
@@ -183,6 +219,7 @@ def procesar_comando(comando):
 
             recurso = normalizar_clave(partes[2])
             fundir(recurso=recurso, cantidad=cantidad)
+            _evaluar_y_mostrar_objetivos()
         else:
             print("Formato inválido. Usa: fundir <cantidad> <recurso>")
     elif comando in {"inventario", "inv"}:
@@ -201,6 +238,7 @@ def procesar_comando(comando):
                 "generador_carbon",
             }:
                 construir_maquina(clave)
+                _evaluar_y_mostrar_objetivos()
             else:
                 print("No reconozco esa máquina para construir.")
         else:
@@ -208,11 +246,14 @@ def procesar_comando(comando):
     elif comando == "ayuda":
         mostrar_ayuda()
     elif comando == "salir":
-        resultado_guardado = guardar_partida()
-        if resultado_guardado["ok"]:
-            print("Partida guardada automáticamente.")
+        if autoguardado_habilitado():
+            resultado_guardado = guardar_partida()
+            if resultado_guardado["ok"]:
+                print("Partida guardada automáticamente.")
+            else:
+                print(resultado_guardado["mensaje"])
         else:
-            print(resultado_guardado["mensaje"])
+            print("Autoguardado omitido: la partida guardada fue borrada.")
         print("Saliendo del juego...")
         return False
     else:
@@ -409,3 +450,78 @@ def mostrar_resultado_mejora(reporte):
             print(f" - ${cantidad}")
         else:
             print(f" - {cantidad} de {obtener_nombre(recurso)}")
+
+
+def _formatear_recompensa_objetivo(recompensa):
+    partes = []
+    for tipo, cantidad in recompensa.items():
+        if tipo == "dinero":
+            partes.append(f"${cantidad}")
+        elif tipo == "energia":
+            partes.append(f"{cantidad} MW")
+        else:
+            partes.append(f"{cantidad} de {obtener_nombre(tipo)}")
+    return ", ".join(partes)
+
+
+def _evaluar_y_mostrar_objetivos():
+    nuevos = evaluar_objetivos()
+    for objetivo in nuevos:
+        print(f"Objetivo completado: {objetivo['nombre']}")
+        print(
+            "Recompensa: "
+            f"{_formatear_recompensa_objetivo(objetivo['recompensa'])}"
+        )
+    return nuevos
+
+
+def mostrar_objetivos(mostrar=True):
+    reporte = obtener_estado_objetivos()
+
+    if mostrar:
+        print("\n===== OBJETIVOS =====")
+        for objetivo in reporte:
+            marca = "x" if objetivo["completado"] else " "
+            if objetivo["completado"]:
+                progreso = "completado"
+            else:
+                progreso = (
+                    f"{objetivo['progreso']}/{objetivo['meta']} "
+                    f"{objetivo['unidad']}"
+                )
+            print(f"[{marca}] {objetivo['nombre']}: {progreso}")
+            print(f"    {objetivo['descripcion']}")
+            print(
+                "    Recompensa: "
+                f"{_formatear_recompensa_objetivo(objetivo['recompensa'])}"
+            )
+
+    return reporte
+
+
+def mostrar_progreso(mostrar=True):
+    estadisticas = obtener_estadisticas()
+    completados = len(obtener_objetivos_completados())
+
+    reporte = {
+        "estadisticas": estadisticas,
+        "objetivos_completados": completados,
+        "objetivos_totales": len(OBJETIVOS),
+    }
+
+    if mostrar:
+        print("\n===== PROGRESO INDUSTRIAL =====")
+        print(f"Turnos completados: {estadisticas['turnos_completados']}")
+        print(f"Hierro extraído: {estadisticas['hierro_extraido']}")
+        print(f"Carbón extraído: {estadisticas['carbon_extraido']}")
+        print(f"Lingotes producidos: {estadisticas['lingotes_producidos']}")
+        print(
+            "Producción automática: "
+            f"{estadisticas['lingotes_automaticos']}"
+        )
+        print(f"Energía generada: {estadisticas['energia_generada']} MW")
+        print(
+            f"Objetivos completados: {completados}/{len(OBJETIVOS)}"
+        )
+
+    return reporte

@@ -35,6 +35,9 @@ python main.py
 | `guardar` | Guarda el progreso en `datos.json`. |
 | `cargar` | Recupera la partida guardada. |
 | `nueva partida confirmar` | Restaura todos los valores iniciales. |
+| `borrar partida confirmar` | Elimina el archivo de guardado local. |
+| `objetivos` | Muestra metas, progreso y recompensas. |
+| `progreso` | Muestra estadísticas industriales acumuladas. |
 | `fundir` | Inicia la fundición interactiva. |
 | `fundir <cantidad> <recurso>` | Funde una cantidad concreta. |
 | `fabricar <cantidad> <producto>` | Fabrica placas o engranajes. |
@@ -59,6 +62,8 @@ mejoras
 mejorar mina hierro
 guardar
 cargar
+objetivos
+progreso
 ```
 
 La fundición manual con `fundir` siempre está disponible. De forma opcional,
@@ -99,6 +104,23 @@ una partida sin cargarla automáticamente.
 El archivo se guarda localmente junto al proyecto, usa JSON legible y está
 excluido de Git. `nueva partida confirmar` reinicia todo el progreso; escribir
 solo `nueva partida` muestra la confirmación necesaria sin modificar estado.
+`borrar partida confirmar` elimina `datos.json`, pero conserva la partida
+actual en memoria hasta salir o iniciar una nueva.
+
+## Objetivos y eventos
+
+FORGE OS incluye siete objetivos industriales para extracción, máquinas,
+lingotes, saldo, mejoras, energía y automatización. Las recompensas se entregan
+una sola vez y pueden incluir dinero, recursos o energía.
+
+Las estadísticas de extracción, producción, generación y turnos son
+acumulativas: consumir o vender recursos no reduce el progreso histórico. El
+comando `progreso` muestra el resumen y `objetivos` separa metas pendientes y
+completadas.
+
+Cada cinco turnos ocurre un evento industrial básico: hallazgo de hierro,
+subsidio energético, bonificación comercial o mantenimiento. El mantenimiento
+nunca puede dejar el saldo por debajo de cero.
 
 ## Estructura del proyecto
 
@@ -110,6 +132,8 @@ energia.py      Cálculo y asignación de energía
 automatizacion.py Estado opcional de automatización
 mejoras.py       Niveles y operaciones de mejora
 persistencia.py  Guardado, validación y carga atómica
+objetivos.py     Metas, estadísticas y recompensas
+eventos.py       Eventos industriales periódicos
 inventario.py   Estado y operaciones del inventario
 maquinas.py     Construcción y estado de las máquinas
 recetas.py      Definición de recetas

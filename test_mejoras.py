@@ -21,6 +21,13 @@ from juego import avanzar_turno, fundir
 from maquinas import construir_maquina, maquinas
 from mejoras import mejorar_maquina, niveles_maquinas
 from mercado import vender
+from objetivos import (
+    ESTADISTICAS_INICIALES,
+    OBJETIVOS,
+    estadisticas,
+    objetivos_completados,
+    restaurar_objetivos,
+)
 
 
 class MejorasTests(unittest.TestCase):
@@ -31,6 +38,8 @@ class MejorasTests(unittest.TestCase):
         self.dinero_original = mercado.dinero
         self.automatizacion_original = automatizacion_activa()
         self.niveles_originales = deepcopy(niveles_maquinas)
+        self.estadisticas_originales = deepcopy(estadisticas)
+        self.objetivos_originales = set(objetivos_completados)
 
         inventario.update({
             "hierro": 0,
@@ -49,6 +58,7 @@ class MejorasTests(unittest.TestCase):
         establecer_energia_almacenada(100)
         mercado.dinero = 0
         desactivar_automatizacion()
+        restaurar_objetivos(ESTADISTICAS_INICIALES, OBJETIVOS)
 
     def tearDown(self):
         inventario.clear()
@@ -63,6 +73,10 @@ class MejorasTests(unittest.TestCase):
             activar_automatizacion()
         else:
             desactivar_automatizacion()
+        restaurar_objetivos(
+            self.estadisticas_originales,
+            self.objetivos_originales,
+        )
 
     def test_todos_los_tipos_comienzan_en_nivel_uno(self):
         self.assertEqual(set(niveles_maquinas.values()), {1})
