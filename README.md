@@ -30,6 +30,8 @@ python main.py
 | `automatizacion` | Muestra el estado de automatización. |
 | `automatizacion activar` | Activa la fundición automática. |
 | `automatizacion desactivar` | Desactiva la automatización. |
+| `mejoras` | Muestra niveles, efectos y próximas mejoras. |
+| `mejorar <maquina>` | Mejora un tipo completo de máquina. |
 | `fundir` | Inicia la fundición interactiva. |
 | `fundir <cantidad> <recurso>` | Funde una cantidad concreta. |
 | `fabricar <cantidad> <producto>` | Fabrica placas o engranajes. |
@@ -50,6 +52,8 @@ generar energia
 comprar
 automatizacion activar
 turno
+mejoras
+mejorar mina hierro
 ```
 
 La fundición manual con `fundir` siempre está disponible. De forma opcional,
@@ -69,6 +73,17 @@ El comando `comprar` abre un menú numerado con materiales, minas, fundidoras y
 generadores. Comprar utiliza el saldo obtenido mediante ventas; construir
 continúa utilizando materiales.
 
+## Mejoras de máquinas
+
+Todas las máquinas de un mismo tipo comparten nivel, desde 1 hasta 3. Al
+mejorar una mina aumenta su producción por turno; las fundidoras automáticas
+procesan más lotes y los generadores producen más MW. El consumo eléctrico y
+el carbón utilizado por cada generador no cambian.
+
+La mejora requiere dinero y materiales. La operación es atómica: si falta
+algún requisito, no se descuenta nada ni cambia el nivel. Las máquinas nuevas
+heredan automáticamente el nivel vigente de su tipo.
+
 ## Estructura del proyecto
 
 ```text
@@ -77,6 +92,7 @@ comandos.py     Procesamiento de comandos de consola
 juego.py        Lógica de turnos, fundición y fabricación
 energia.py      Cálculo y asignación de energía
 automatizacion.py Estado opcional de automatización
+mejoras.py       Niveles y operaciones de mejora
 inventario.py   Estado y operaciones del inventario
 maquinas.py     Construcción y estado de las máquinas
 recetas.py      Definición de recetas

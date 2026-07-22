@@ -8,10 +8,6 @@ COSTOS_CONSTRUCCION = {
     },
 }
 
-GENERACION_ENERGIA = {
-    "generador_carbon": 10,
-}
-
 CONSUMO_CARBON_GENERADOR = 1
 ENERGIA_INICIAL = 10
 
@@ -26,6 +22,44 @@ PRIORIDAD_ENERGIA = (
     "mina_hierro",
     "fundidora",
 )
+
+NIVEL_MAXIMO = 3
+
+PRODUCCION_POR_NIVEL = {
+    "mina_hierro": {1: 2, 2: 3, 3: 4},
+    "mina_carbon": {1: 1, 2: 2, 3: 3},
+}
+
+LOTES_FUNDIDORA_POR_NIVEL = {
+    1: 1,
+    2: 2,
+    3: 3,
+}
+
+GENERACION_GENERADOR_POR_NIVEL = {
+    1: 10,
+    2: 15,
+    3: 20,
+}
+
+COSTOS_MEJORAS = {
+    "mina_hierro": {
+        2: {"dinero": 50, "lingotes": 5},
+        3: {"dinero": 120, "placas": 4},
+    },
+    "mina_carbon": {
+        2: {"dinero": 50, "lingotes": 5},
+        3: {"dinero": 120, "placas": 4},
+    },
+    "fundidora": {
+        2: {"dinero": 80, "lingotes": 8},
+        3: {"dinero": 180, "engranajes": 3},
+    },
+    "generador_carbon": {
+        2: {"dinero": 100, "placas": 5},
+        3: {"dinero": 250, "engranajes": 5},
+    },
+}
 
 PRECIOS_VENTA = {
     "hierro": 2,

@@ -1,7 +1,11 @@
 from math import ceil
 
 from automatizacion import automatizacion_activa, obtener_maquinas_efectivas
-from config import obtener_nombre
+from config import (
+    LOTES_FUNDIDORA_POR_NIVEL,
+    PRODUCCION_POR_NIVEL,
+    obtener_nombre,
+)
 from energia import (
     consumir_energia,
     obtener_energia_almacenada,
@@ -9,6 +13,7 @@ from energia import (
 )
 from inventario import inventario, trabajar_mina
 from maquinas import maquinas
+from mejoras import niveles_maquinas, obtener_nivel
 from recetas import RECETAS
 
 
@@ -181,8 +186,16 @@ def avanzar_turno(mostrar_produccion=True):
     reporte = obtener_reporte_energia(maquinas_efectivas, energia_inicial)
     activas = reporte["maquinas_activas"]
 
-    carbon_producido = activas["mina_carbon"]
-    hierro_producido = activas["mina_hierro"] * 2
+    nivel_carbon = obtener_nivel("mina_carbon")
+    nivel_hierro = obtener_nivel("mina_hierro")
+    carbon_producido = (
+        activas["mina_carbon"]
+        * PRODUCCION_POR_NIVEL["mina_carbon"][nivel_carbon]
+    )
+    hierro_producido = (
+        activas["mina_hierro"]
+        * PRODUCCION_POR_NIVEL["mina_hierro"][nivel_hierro]
+    )
 
     if carbon_producido:
         trabajar_mina("carbon", carbon_producido)
@@ -192,7 +205,12 @@ def avanzar_turno(mostrar_produccion=True):
     automatizacion_habilitada = automatizacion_activa()
     lingotes_automaticos = 0
     if automatizacion_habilitada:
-        lingotes_automaticos = _procesar_fundidoras(activas["fundidora"])
+        nivel_fundidora = obtener_nivel("fundidora")
+        lotes_maximos = (
+            activas["fundidora"]
+            * LOTES_FUNDIDORA_POR_NIVEL[nivel_fundidora]
+        )
+        lingotes_automaticos = _procesar_fundidoras(lotes_maximos)
 
     reporte["produccion"] = {
         "hierro": hierro_producido,
@@ -202,6 +220,7 @@ def avanzar_turno(mostrar_produccion=True):
         "lingotes": lingotes_automaticos,
     }
     reporte["automatizacion_activa"] = automatizacion_habilitada
+    reporte["niveles_maquinas"] = niveles_maquinas.copy()
     consumir_energia(reporte["energia_utilizada"])
     reporte["energia_restante"] = obtener_energia_almacenada()
 

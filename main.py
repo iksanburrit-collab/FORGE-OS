@@ -5,7 +5,7 @@ def iniciar_juego():
     print("=" * 45)
     print("          FORGE OS")
     print(" Sistema de Automatización Industrial")
-    print("             v0.6")
+    print("             v0.7")
     print("=" * 45)
 
     print("\nEscribe 'ayuda' para ver los comandos.\n")

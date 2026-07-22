@@ -16,6 +16,7 @@ from mercado import (
     obtener_catalogo_compra,
     vender,
 )
+from mejoras import mejorar_maquina, obtener_reporte_mejoras
 from juego import avanzar_turno, fabricar, fundir, mostrar_recetas
 
 
@@ -47,6 +48,8 @@ def mostrar_ayuda():
     print(" - automatizacion: Mostrar el estado de automatización")
     print(" - automatizacion activar: Activar la fundición automática")
     print(" - automatizacion desactivar: Desactivar la automatización")
+    print(" - mejoras: Mostrar niveles, efectos y costos de mejora")
+    print(" - mejorar <maquina>: Mejorar todas las máquinas de ese tipo")
     print(" - ayuda: Mostrar esta ayuda")
     print(" - salir: Salir del juego")
 
@@ -105,6 +108,17 @@ def procesar_comando(comando):
             "Formato inválido. Usa: automatizacion, "
             "automatizacion activar o automatizacion desactivar"
         )
+    elif comando == "mejoras":
+        mostrar_mejoras()
+    elif comando.startswith("mejorar"):
+        partes = comando.split()
+        if len(partes) < 2:
+            print("Formato inválido. Usa: mejorar <maquina>")
+            return True
+
+        tipo = normalizar_clave(" ".join(partes[1:]))
+        reporte = mejorar_maquina(tipo)
+        mostrar_resultado_mejora(reporte)
     elif comando.startswith("fabricar"):
         partes = comando.split()
         if len(partes) != 3:
@@ -307,3 +321,69 @@ def mostrar_menu_compra():
         return 0
 
     return comprar(opciones[indice], cantidad)
+
+
+def _formatear_efecto(efecto):
+    return f"{efecto['cantidad']} {efecto['unidad']}"
+
+
+def _formatear_costo(costo):
+    partes = []
+    for recurso, cantidad in costo.items():
+        if recurso == "dinero":
+            partes.append(f"${cantidad}")
+        else:
+            partes.append(f"{cantidad} de {obtener_nombre(recurso)}")
+    return ", ".join(partes)
+
+
+def mostrar_mejoras(mostrar=True):
+    reporte = obtener_reporte_mejoras()
+
+    if mostrar:
+        print("\n===== MEJORAS DE MÁQUINAS =====")
+        for tipo, datos in reporte.items():
+            print(f"\n{obtener_nombre(tipo)}")
+            print(
+                f" Nivel: {datos['nivel_actual']}/{datos['nivel_maximo']}"
+            )
+            print(f" Efecto actual: {_formatear_efecto(datos['efecto_actual'])}")
+            if datos["en_nivel_maximo"]:
+                print(" Nivel máximo alcanzado.")
+            else:
+                print(
+                    " Siguiente nivel: "
+                    f"{_formatear_efecto(datos['efecto_siguiente'])}"
+                )
+                print(
+                    " Costo: "
+                    f"{_formatear_costo(datos['costo_siguiente'])}"
+                )
+
+    return reporte
+
+
+def mostrar_resultado_mejora(reporte):
+    if reporte["exito"]:
+        print(
+            f"Mejora completada: {obtener_nombre(reporte['tipo'])} "
+            f"ahora está en nivel {reporte['nivel_actual']}."
+        )
+        return
+
+    if reporte["motivo"] == "tipo_invalido":
+        print("No reconozco ese tipo de máquina para mejorar.")
+        return
+
+    if reporte["motivo"] == "nivel_maximo":
+        print(
+            f"{obtener_nombre(reporte['tipo'])} ya está en el nivel máximo."
+        )
+        return
+
+    print("No se puede completar la mejora. Faltan:")
+    for recurso, cantidad in reporte["faltantes"].items():
+        if recurso == "dinero":
+            print(f" - ${cantidad}")
+        else:
+            print(f" - {cantidad} de {obtener_nombre(recurso)}")

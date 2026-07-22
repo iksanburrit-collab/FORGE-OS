@@ -2,19 +2,19 @@ from config import (
     CONSUMO_CARBON_GENERADOR,
     CONSUMO_ENERGIA,
     ENERGIA_INICIAL,
-    GENERACION_ENERGIA,
+    GENERACION_GENERADOR_POR_NIVEL,
     PRIORIDAD_ENERGIA,
 )
+from mejoras import obtener_nivel
 
 
 energia_almacenada = ENERGIA_INICIAL
 
 
 def calcular_generacion(maquinas):
-    return sum(
-        maquinas.get(tipo, 0) * generacion
-        for tipo, generacion in GENERACION_ENERGIA.items()
-    )
+    nivel = obtener_nivel("generador_carbon")
+    generacion = GENERACION_GENERADOR_POR_NIVEL[nivel]
+    return maquinas.get("generador_carbon", 0) * generacion
 
 
 def calcular_consumo_maximo(maquinas):
@@ -42,9 +42,9 @@ def generar_energia(maquinas, inventario):
         carbon_disponible // CONSUMO_CARBON_GENERADOR,
     )
     carbon_consumido = generadores_activos * CONSUMO_CARBON_GENERADOR
-    energia_generada = (
-        generadores_activos * GENERACION_ENERGIA["generador_carbon"]
-    )
+    nivel = obtener_nivel("generador_carbon")
+    generacion_unitaria = GENERACION_GENERADOR_POR_NIVEL[nivel]
+    energia_generada = generadores_activos * generacion_unitaria
 
     if carbon_consumido:
         inventario["carbon"] -= carbon_consumido
@@ -55,6 +55,8 @@ def generar_energia(maquinas, inventario):
         "generadores_activos": generadores_activos,
         "carbon_consumido": carbon_consumido,
         "energia_generada": energia_generada,
+        "generacion_unitaria": generacion_unitaria,
+        "nivel_generador": nivel,
         "energia_almacenada": energia_almacenada,
     }
 
@@ -105,8 +107,7 @@ def obtener_reporte_energia(maquinas, energia_disponible=None):
             "consumo_maximo": consumo_maximo,
             "deficit": max(0, consumo_maximo - energia_disponible),
             "generadores": {
-                tipo: maquinas.get(tipo, 0)
-                for tipo in GENERACION_ENERGIA
+                "generador_carbon": maquinas.get("generador_carbon", 0),
             },
             "consumo_por_tipo": {
                 tipo: {
