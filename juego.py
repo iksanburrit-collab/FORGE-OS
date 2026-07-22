@@ -1,6 +1,11 @@
 from math import ceil
 
 from config import obtener_nombre
+from energia import (
+    consumir_energia,
+    obtener_energia_almacenada,
+    obtener_reporte_energia,
+)
 from inventario import inventario, trabajar_mina
 from maquinas import maquinas
 from recetas import RECETAS
@@ -136,26 +141,9 @@ def fundir(mostrar_mensaje=True, recurso=None, cantidad=None):
             mostrar_mensaje=mostrar_mensaje,
         )
 
-    receta = RECETAS["lingote"]
+    lingotes_creados = _procesar_fundidoras(maquinas["fundidora"])
 
-    recursos_necesarios = receta["consume"]
-    productos_creados = receta["produce"]
-
-    lingotes_creados = 0
-
-    for _ in range(maquinas["fundidora"]):
-        puede_fundir = all(
-            inventario[recurso] >= cantidad
-            for recurso, cantidad in recursos_necesarios.items()
-        )
-        if puede_fundir:
-            for recurso, cantidad in recursos_necesarios.items():
-                inventario[recurso] -= cantidad
-            for producto, cantidad in productos_creados.items():
-                inventario[producto] += cantidad
-            lingotes_creados += 1
-
-    if lingotes_creados > 0:
+    if lingotes_creados:
         if mostrar_mensaje:
             print(f"Se fundieron {lingotes_creados} lingotes.")
     else:
@@ -165,11 +153,71 @@ def fundir(mostrar_mensaje=True, recurso=None, cantidad=None):
     return lingotes_creados
 
 
+def _procesar_fundidoras(cantidad_fundidoras):
+    receta = RECETAS["lingote"]
+    lingotes_creados = 0
+
+    for _ in range(cantidad_fundidoras):
+        puede_fundir = all(
+            inventario.get(recurso, 0) >= cantidad
+            for recurso, cantidad in receta["consume"].items()
+        )
+        if not puede_fundir:
+            break
+
+        for recurso, cantidad in receta["consume"].items():
+            inventario[recurso] -= cantidad
+        for producto, cantidad in receta["produce"].items():
+            inventario[producto] = inventario.get(producto, 0) + cantidad
+            lingotes_creados += cantidad
+
+    return lingotes_creados
+
+
 def avanzar_turno(mostrar_produccion=True):
-    print("\n===== NUEVO TURNO =====")
+    energia_inicial = obtener_energia_almacenada()
+    reporte = obtener_reporte_energia(maquinas, energia_inicial)
+    activas = reporte["maquinas_activas"]
 
-    hierro_producido = maquinas["mina_hierro"] * 2
-    carbon_producido = maquinas["mina_carbon"] * 1
+    carbon_producido = activas["mina_carbon"]
+    hierro_producido = activas["mina_hierro"] * 2
 
-    trabajar_mina("hierro", hierro_producido, mostrar_mensaje=mostrar_produccion)
-    trabajar_mina("carbon", carbon_producido, mostrar_mensaje=mostrar_produccion)
+    if carbon_producido:
+        trabajar_mina("carbon", carbon_producido)
+    if hierro_producido:
+        trabajar_mina("hierro", hierro_producido)
+
+    reporte["produccion"] = {
+        "hierro": hierro_producido,
+        "carbon": carbon_producido,
+    }
+    consumir_energia(reporte["energia_utilizada"])
+    reporte["energia_restante"] = obtener_energia_almacenada()
+
+    print("\n===== TURNO COMPLETADO =====")
+    print(
+        f"Energía: {energia_inicial} -> {reporte['energia_restante']} MW "
+        f"(consumo: {reporte['energia_utilizada']} MW)"
+    )
+
+    if mostrar_produccion:
+        print("\nProducción:")
+        produccion_visible = False
+        for recurso, cantidad in reporte["produccion"].items():
+            if cantidad:
+                print(f" +{cantidad} de {obtener_nombre(recurso)}.")
+                produccion_visible = True
+        if not produccion_visible:
+            print(" Sin producción.")
+
+    sin_energia = {
+        tipo: cantidad
+        for tipo, cantidad in reporte["maquinas_sin_energia"].items()
+        if cantidad
+    }
+    if sin_energia:
+        print("\nMáquinas sin energía:")
+        for tipo, cantidad in sin_energia.items():
+            print(f" - {cantidad} {obtener_nombre(tipo)}")
+
+    return reporte
