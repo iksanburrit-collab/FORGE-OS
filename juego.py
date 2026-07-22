@@ -91,9 +91,11 @@ def mostrar_recetas(mostrar=True):
 
 
 def fundir_recursos(recurso, cantidad=1, mostrar_mensaje=True):
-    if recurso not in inventario:
+    receta = RECETAS["lingote"]
+
+    if recurso not in receta["consume"]:
         if mostrar_mensaje:
-            print(f"El recurso '{recurso}' no está disponible.")
+            print(f"No existe una receta de fundición para '{recurso}'.")
         return 0
 
     if cantidad <= 0:
@@ -101,7 +103,6 @@ def fundir_recursos(recurso, cantidad=1, mostrar_mensaje=True):
             print("La cantidad debe ser mayor que cero.")
         return 0
 
-    receta = RECETAS["lingote"]
     recursos_necesarios = {
         nombre: requerido * cantidad
         for nombre, requerido in receta["consume"].items()
