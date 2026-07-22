@@ -1,5 +1,6 @@
 from math import ceil
 
+from automatizacion import automatizacion_activa, obtener_maquinas_efectivas
 from config import obtener_nombre
 from energia import (
     consumir_energia,
@@ -176,7 +177,8 @@ def _procesar_fundidoras(cantidad_fundidoras):
 
 def avanzar_turno(mostrar_produccion=True):
     energia_inicial = obtener_energia_almacenada()
-    reporte = obtener_reporte_energia(maquinas, energia_inicial)
+    maquinas_efectivas = obtener_maquinas_efectivas(maquinas)
+    reporte = obtener_reporte_energia(maquinas_efectivas, energia_inicial)
     activas = reporte["maquinas_activas"]
 
     carbon_producido = activas["mina_carbon"]
@@ -187,10 +189,19 @@ def avanzar_turno(mostrar_produccion=True):
     if hierro_producido:
         trabajar_mina("hierro", hierro_producido)
 
+    automatizacion_habilitada = automatizacion_activa()
+    lingotes_automaticos = 0
+    if automatizacion_habilitada:
+        lingotes_automaticos = _procesar_fundidoras(activas["fundidora"])
+
     reporte["produccion"] = {
         "hierro": hierro_producido,
         "carbon": carbon_producido,
     }
+    reporte["produccion_automatica"] = {
+        "lingotes": lingotes_automaticos,
+    }
+    reporte["automatizacion_activa"] = automatizacion_habilitada
     consumir_energia(reporte["energia_utilizada"])
     reporte["energia_restante"] = obtener_energia_almacenada()
 
@@ -201,7 +212,7 @@ def avanzar_turno(mostrar_produccion=True):
     )
 
     if mostrar_produccion:
-        print("\nProducción:")
+        print("\nExtracción:")
         produccion_visible = False
         for recurso, cantidad in reporte["produccion"].items():
             if cantidad:
@@ -209,6 +220,20 @@ def avanzar_turno(mostrar_produccion=True):
                 produccion_visible = True
         if not produccion_visible:
             print(" Sin producción.")
+
+    if automatizacion_habilitada:
+        print("\nProducción automática:")
+        if lingotes_automaticos:
+            print(f" +{lingotes_automaticos} de Lingotes.")
+        else:
+            print(" Sin recursos suficientes para fundir.")
+        print(f"Fundidoras activas: {activas['fundidora']}")
+        print(
+            "Fundidoras detenidas: "
+            f"{reporte['maquinas_sin_energia']['fundidora']}"
+        )
+    else:
+        print("\nAutomatización: desactivada")
 
     sin_energia = {
         tipo: cantidad

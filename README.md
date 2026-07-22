@@ -27,6 +27,9 @@ python main.py
 | `energia` | Muestra la generación y el consumo energético actual. |
 | `generar energia` | Consume carbón y añade energía a la reserva. |
 | `comprar` | Abre la tienda de materiales y máquinas. |
+| `automatizacion` | Muestra el estado de automatización. |
+| `automatizacion activar` | Activa la fundición automática. |
+| `automatizacion desactivar` | Desactiva la automatización. |
 | `fundir` | Inicia la fundición interactiva. |
 | `fundir <cantidad> <recurso>` | Funde una cantidad concreta. |
 | `fabricar <cantidad> <producto>` | Fabrica placas o engranajes. |
@@ -45,10 +48,16 @@ construir mina de hierro
 construir generador carbon
 generar energia
 comprar
+automatizacion activar
+turno
 ```
 
-Los lingotes solo se producen manualmente con `fundir`. El comando `fabricar`
-se utiliza para productos manufacturados, como placas y engranajes.
+La fundición manual con `fundir` siempre está disponible. De forma opcional,
+`automatizacion activar` permite que cada fundidora con energía procese como
+máximo un lote de lingotes durante el turno. `automatizacion desactivar`
+restaura el comportamiento exclusivamente manual y evita que las fundidoras
+reserven energía. El comando `energia` distingue entre el consumo potencial
+de todas las máquinas y el consumo efectivo del próximo turno.
 
 Cada partida comienza con un generador de carbón y una reserva inicial de 10
 MW. `generar energia` consume una unidad de carbón por generador activo y
@@ -67,6 +76,7 @@ main.py         Punto de entrada del juego
 comandos.py     Procesamiento de comandos de consola
 juego.py        Lógica de turnos, fundición y fabricación
 energia.py      Cálculo y asignación de energía
+automatizacion.py Estado opcional de automatización
 inventario.py   Estado y operaciones del inventario
 maquinas.py     Construcción y estado de las máquinas
 recetas.py      Definición de recetas

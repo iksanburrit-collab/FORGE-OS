@@ -1,3 +1,10 @@
+from automatizacion import (
+    activar_automatizacion,
+    automatizacion_activa,
+    desactivar_automatizacion,
+    obtener_estado_automatizacion,
+    obtener_maquinas_efectivas,
+)
 from config import obtener_nombre, normalizar_clave
 from energia import generar_energia, obtener_reporte_energia
 from inventario import inventario, mostrar_inventario
@@ -37,6 +44,9 @@ def mostrar_ayuda():
     print(" - comprar: Abrir el menú de compra")
     print(" - energia: Mostrar generación y consumo de energía")
     print(" - generar energia: Consumir carbón para almacenar energía")
+    print(" - automatizacion: Mostrar el estado de automatización")
+    print(" - automatizacion activar: Activar la fundición automática")
+    print(" - automatizacion desactivar: Desactivar la automatización")
     print(" - ayuda: Mostrar esta ayuda")
     print(" - salir: Salir del juego")
 
@@ -70,6 +80,31 @@ def procesar_comando(comando):
         mostrar_energia()
     elif comando == "generar energia":
         ejecutar_generacion_energia()
+    elif comando in {"automatizacion", "automatización"}:
+        mostrar_automatizacion()
+    elif comando in {
+        "automatizacion activar",
+        "automatización activar",
+    }:
+        reporte = activar_automatizacion()
+        if reporte["cambio"]:
+            print("Automatización activada.")
+        else:
+            print("La automatización ya estaba activada.")
+    elif comando in {
+        "automatizacion desactivar",
+        "automatización desactivar",
+    }:
+        reporte = desactivar_automatizacion()
+        if reporte["cambio"]:
+            print("Automatización desactivada.")
+        else:
+            print("La automatización ya estaba desactivada.")
+    elif comando.startswith(("automatizacion", "automatización")):
+        print(
+            "Formato inválido. Usa: automatizacion, "
+            "automatizacion activar o automatizacion desactivar"
+        )
     elif comando.startswith("fabricar"):
         partes = comando.split()
         if len(partes) != 3:
@@ -151,7 +186,11 @@ def procesar_comando(comando):
 
 
 def mostrar_energia(mostrar=True):
-    reporte = obtener_reporte_energia(maquinas)
+    reporte_potencial = obtener_reporte_energia(maquinas)
+    maquinas_efectivas = obtener_maquinas_efectivas(maquinas)
+    reporte = obtener_reporte_energia(maquinas_efectivas)
+    reporte["consumo_potencial"] = reporte_potencial["consumo_maximo"]
+    reporte["consumo_efectivo"] = reporte["consumo_maximo"]
 
     if mostrar:
         print("\nEnergía:")
@@ -160,7 +199,16 @@ def mostrar_energia(mostrar=True):
             f"Capacidad por generación: "
             f"{reporte['capacidad_generacion']} MW"
         )
-        print(f"Consumo máximo: {reporte['consumo_maximo']} MW")
+        print(
+            "Consumo potencial (todas las máquinas): "
+            f"{reporte['consumo_potencial']} MW"
+        )
+        print(
+            "Consumo efectivo del próximo turno: "
+            f"{reporte['consumo_efectivo']} MW"
+        )
+        estado = "activa" if automatizacion_activa() else "desactivada"
+        print(f"Automatización: {estado}")
         if reporte["deficit"]:
             print(f"Déficit: {reporte['deficit']} MW")
         else:
@@ -174,6 +222,33 @@ def mostrar_energia(mostrar=True):
                 f" - {obtener_nombre(tipo)}: {consumo['consumo_total']} MW "
                 f"({consumo['maquinas']} x {consumo['consumo_unitario']} MW)"
             )
+
+    return reporte
+
+
+def mostrar_automatizacion(mostrar=True):
+    estado = obtener_estado_automatizacion()
+    maquinas_efectivas = obtener_maquinas_efectivas(maquinas)
+    reporte_energia = obtener_reporte_energia(maquinas_efectivas)
+    reporte = {
+        **estado,
+        "fundidoras_construidas": maquinas.get("fundidora", 0),
+        "fundidoras_energizables": reporte_energia["maquinas_activas"].get(
+            "fundidora",
+            0,
+        ),
+    }
+
+    if mostrar:
+        estado_visible = "activada" if reporte["activa"] else "desactivada"
+        print("\nAutomatización:")
+        print(f"Estado: {estado_visible}")
+        print("Procesos disponibles: fundición de lingotes")
+        print(f"Fundidoras construidas: {reporte['fundidoras_construidas']}")
+        print(
+            "Fundidoras con energía disponible: "
+            f"{reporte['fundidoras_energizables']}"
+        )
 
     return reporte
 

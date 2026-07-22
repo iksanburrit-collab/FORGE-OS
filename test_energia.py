@@ -169,8 +169,8 @@ class IntegracionEnergiaTests(unittest.TestCase):
         with redirect_stdout(StringIO()):
             reporte = avanzar_turno()
 
-        self.assertEqual(reporte["energia_utilizada"], 8)
-        self.assertEqual(obtener_energia_almacenada(), 2)
+        self.assertEqual(reporte["energia_utilizada"], 4)
+        self.assertEqual(obtener_energia_almacenada(), 6)
 
     def test_turno_no_funde_automaticamente(self):
         maquinas.update({
