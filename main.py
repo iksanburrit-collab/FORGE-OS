@@ -1,25 +1,15 @@
-from comandos import procesar_comando
-from config import VERSION_JUEGO
-from persistencia import existe_partida_guardada
+import sys
 
 
 def iniciar_juego():
-    print("=" * 45)
-    print("          FORGE OS")
-    print(" Sistema de Automatización Industrial")
-    print(f"             v{VERSION_JUEGO}")
-    print("=" * 45)
+    """Abre la única modalidad jugable: la interfaz gráfica."""
+    from interfaz.ventana_principal import iniciar_interfaz
 
-    print("\nEscribe 'ayuda' para ver los comandos.\n")
-    if existe_partida_guardada():
-        print("Hay una partida guardada. Usa 'cargar' para recuperarla.\n")
-
-    while True:
-        comando = input("FORGE > ").strip().lower()
-
-        if not procesar_comando(comando):
-            break
+    iniciar_interfaz()
 
 
 if __name__ == "__main__":
-    iniciar_juego()
+    if len(sys.argv) == 1 or sys.argv[1:] == ["--gui"]:
+        iniciar_juego()
+    else:
+        print("Uso: python main.py [--gui]")

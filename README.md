@@ -1,8 +1,8 @@
-# FORGE OS
+# FORGE OS v1.0
 
-Simulador industrial por consola inspirado en juegos de automatización como
-Factorio. Permite obtener recursos, fundir materiales, fabricar productos y
-construir máquinas mediante comandos.
+Simulador industrial de gestión con interfaz gráfica. Permite
+administrar inventario, máquinas, energía, automatización, fabricación,
+mercado, mejoras, objetivos, eventos y partidas guardadas.
 
 ## Requisitos
 
@@ -17,71 +17,44 @@ Desde la carpeta del proyecto:
 python main.py
 ```
 
-## Comandos
+El juego abre directamente su interfaz gráfica Tkinter. `--gui` se conserva
+como alias opcional por compatibilidad:
 
-| Comando | Descripción |
-| --- | --- |
-| `turno` | Avanza un turno y produce recursos. |
-| `inventario` o `inv` | Muestra los recursos y productos disponibles. |
-| `maquinas` | Muestra las máquinas construidas. |
-| `energia` | Muestra la generación y el consumo energético actual. |
-| `generar energia` | Consume carbón y añade energía a la reserva. |
-| `comprar` | Abre la tienda de materiales y máquinas. |
-| `automatizacion` | Muestra el estado de automatización. |
-| `automatizacion activar` | Activa la fundición automática. |
-| `automatizacion desactivar` | Desactiva la automatización. |
-| `mejoras` | Muestra niveles, efectos y próximas mejoras. |
-| `mejorar <maquina>` | Mejora un tipo completo de máquina. |
-| `guardar` | Guarda el progreso en `datos.json`. |
-| `cargar` | Recupera la partida guardada. |
-| `nueva partida confirmar` | Restaura todos los valores iniciales. |
-| `borrar partida confirmar` | Elimina el archivo de guardado local. |
-| `objetivos` | Muestra metas, progreso y recompensas. |
-| `progreso` | Muestra estadísticas industriales acumuladas. |
-| `fundir` | Inicia la fundición interactiva. |
-| `fundir <cantidad> <recurso>` | Funde una cantidad concreta. |
-| `fabricar <cantidad> <producto>` | Fabrica placas o engranajes. |
-| `recetas` | Muestra todas las recetas disponibles. |
-| `construir <maquina>` | Construye una máquina. |
-| `ayuda` | Muestra la ayuda dentro del juego. |
-| `salir` | Cierra el simulador. |
-
-Ejemplos:
-
-```text
-fundir 3 hierro
-fabricar 2 engranajes
-fabricar 5 placas
-construir mina de hierro
-construir generador carbon
-generar energia
-comprar
-automatizacion activar
-turno
-mejoras
-mejorar mina hierro
-guardar
-cargar
-objetivos
-progreso
+```bash
+python main.py --gui
 ```
 
-La fundición manual con `fundir` siempre está disponible. De forma opcional,
-`automatizacion activar` permite que cada fundidora con energía procese como
-máximo un lote de lingotes durante el turno. `automatizacion desactivar`
-restaura el comportamiento exclusivamente manual y evita que las fundidoras
-reserven energía. El comando `energia` distingue entre el consumo potencial
-de todas las máquinas y el consumo efectivo del próximo turno.
+FORGE OS ya no ofrece un modo de juego por consola.
+
+## Controles gráficos
+
+La ventana principal muestra saldo, turnos, automatización, inventario,
+máquinas, niveles, efectos y estado energético. Su registro de actividad
+recoge resultados, advertencias y errores sin mostrar tracebacks técnicos.
+
+Los botones principales permiten avanzar turno, generar energía, cambiar la
+automatización, guardar, cargar, iniciar una partida, actualizar y salir. Las
+ventanas secundarias permiten construir, fabricar, fundir manualmente,
+comprar, vender, mejorar y consultar objetivos, progreso y recetas.
+
+`Nueva partida` solicita confirmación gráfica. Cargar un archivo inexistente o
+inválido conserva el estado actual. Al cerrar la GUI se respeta la regla de
+autoguardado vigente.
+
+La fundición manual está disponible desde su ventana propia. La automatización
+opcional permite que cada fundidora con energía procese lingotes al avanzar el
+turno. Al desactivarla, las fundidoras no reservan energía. El panel energético
+distingue el consumo potencial del consumo efectivo.
 
 Cada partida comienza con un generador de carbón y una reserva inicial de 10
-MW. `generar energia` consume una unidad de carbón por generador activo y
+MW. El botón `Generar energía` consume una unidad de carbón por generador y
 añade 10 MW por generador a la reserva acumulativa. Al avanzar el turno se
 descuenta la energía utilizada. Si no alcanza, se priorizan las minas de
 carbón, después las minas de hierro y finalmente las fundidoras.
 
-El comando `comprar` abre un menú numerado con materiales, minas, fundidoras y
-generadores. Comprar utiliza el saldo obtenido mediante ventas; construir
-continúa utilizando materiales.
+La ventana de mercado permite comprar materiales, minas, fundidoras y
+generadores usando el saldo obtenido mediante ventas. Construir continúa
+utilizando materiales.
 
 ## Mejoras de máquinas
 
@@ -96,16 +69,13 @@ heredan automáticamente el nivel vigente de su tipo.
 
 ## Guardado de partidas
 
-`guardar` conserva inventario, máquinas, dinero, energía, automatización y
-niveles en `datos.json`. `cargar` restaura ese estado después de validarlo. Al
-salir se realiza un guardado automático; al iniciar, FORGE OS avisa si existe
-una partida sin cargarla automáticamente.
+Los botones `Guardar` y `Cargar` conservan inventario, máquinas, dinero,
+energía, automatización y niveles en `datos.json`. Al cerrar la ventana se
+realiza un guardado automático cuando está habilitado.
 
 El archivo se guarda localmente junto al proyecto, usa JSON legible y está
-excluido de Git. `nueva partida confirmar` reinicia todo el progreso; escribir
-solo `nueva partida` muestra la confirmación necesaria sin modificar estado.
-`borrar partida confirmar` elimina `datos.json`, pero conserva la partida
-actual en memoria hasta salir o iniciar una nueva.
+excluido de Git. `Nueva partida` solicita confirmación gráfica antes de
+reiniciar el progreso.
 
 ## Objetivos y eventos
 
@@ -114,9 +84,8 @@ lingotes, saldo, mejoras, energía y automatización. Las recompensas se entrega
 una sola vez y pueden incluir dinero, recursos o energía.
 
 Las estadísticas de extracción, producción, generación y turnos son
-acumulativas: consumir o vender recursos no reduce el progreso histórico. El
-comando `progreso` muestra el resumen y `objetivos` separa metas pendientes y
-completadas.
+acumulativas: consumir o vender recursos no reduce el progreso histórico. Las
+ventanas `Progreso` y `Objetivos` muestran el resumen sin alterar el estado.
 
 Cada cinco turnos ocurre un evento industrial básico: hallazgo de hierro,
 subsidio energético, bonificación comercial o mantenimiento. El mantenimiento
@@ -126,7 +95,8 @@ nunca puede dejar el saldo por debajo de cero.
 
 ```text
 main.py         Punto de entrada del juego
-comandos.py     Procesamiento de comandos de consola
+comandos.py     Reportes y compatibilidad interna de operaciones
+interfaz/       Adaptadores sin pantalla y ventanas Tkinter
 juego.py        Lógica de turnos, fundición y fabricación
 energia.py      Cálculo y asignación de energía
 automatizacion.py Estado opcional de automatización
@@ -139,6 +109,15 @@ maquinas.py     Construcción y estado de las máquinas
 recetas.py      Definición de recetas
 config.py       Nombres, alias y costes
 ```
+
+## Limitaciones conocidas
+
+- La interfaz es deliberadamente funcional y no incluye animaciones, mapas,
+  cintas transportadoras ni imágenes.
+- El juego se actualiza mediante acciones del usuario; no existen procesos en
+  segundo plano.
+- Las pruebas visuales reales necesitan una sesión de escritorio disponible,
+  aunque la lógica y los callbacks se prueban sin abrir ventanas.
 
 ## Estado local
 

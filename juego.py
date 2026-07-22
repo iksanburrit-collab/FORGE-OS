@@ -195,6 +195,7 @@ def avanzar_turno(
     mostrar_produccion=True,
     evento_id=None,
     selector_evento=None,
+    mostrar_mensaje=True,
 ):
     energia_inicial = obtener_energia_almacenada()
     maquinas_efectivas = obtener_maquinas_efectivas(maquinas)
@@ -265,6 +266,9 @@ def avanzar_turno(
     reporte["estadisticas"] = obtener_estadisticas()
     reporte["objetivos_completados"] = nuevos_objetivos
     reporte["evento"] = evento
+
+    if not mostrar_mensaje:
+        return reporte
 
     print("\n===== TURNO COMPLETADO =====")
     print(

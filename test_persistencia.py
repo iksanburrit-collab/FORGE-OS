@@ -17,7 +17,6 @@ from automatizacion import (
 from comandos import procesar_comando
 from energia import establecer_energia_almacenada, obtener_energia_almacenada
 from inventario import INVENTARIO_INICIAL, inventario, restaurar_inventario
-from main import iniciar_juego
 from maquinas import MAQUINAS_INICIALES, maquinas, restaurar_maquinas
 from mejoras import NIVELES_INICIALES, niveles_maquinas, restaurar_mejoras
 from objetivos import (
@@ -52,7 +51,7 @@ class PersistenciaTests(unittest.TestCase):
         estado = recopilar_estado()
 
         self.assertEqual(estado["version_guardado"], 1)
-        self.assertEqual(estado["version_juego"], "0.9")
+        self.assertEqual(estado["version_juego"], "1.0")
         self.assertEqual(
             set(estado),
             {
@@ -412,16 +411,6 @@ class PersistenciaTests(unittest.TestCase):
         self.assertFalse(continuar)
         self.assertIn("Fallo de guardado", salida.getvalue())
         self.assertIn("Saliendo del juego", salida.getvalue())
-
-    def test_arranque_avisa_si_existe_guardado(self):
-        guardado = {"ok": True, "mensaje": "Guardada."}
-        with patch("main.existe_partida_guardada", return_value=True):
-            with patch("builtins.input", return_value="salir"):
-                with patch("comandos.guardar_partida", return_value=guardado):
-                    with redirect_stdout(StringIO()) as salida:
-                        iniciar_juego()
-
-        self.assertIn("Hay una partida guardada", salida.getvalue())
 
     def assert_carga_invalida(self, datos):
         estado_inicial = self._capturar_estado()

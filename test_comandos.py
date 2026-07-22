@@ -7,7 +7,6 @@ from unittest.mock import patch
 from comandos import procesar_comando
 from inventario import inventario
 from juego import fabricar, fundir
-from main import iniciar_juego
 from objetivos import (
     ESTADISTICAS_INICIALES,
     OBJETIVOS,
@@ -31,17 +30,6 @@ class ValidacionRecetasTests(unittest.TestCase):
             self.estadisticas_originales,
             self.objetivos_originales,
         )
-
-    def test_arranque_y_salida(self):
-        salida = StringIO()
-        guardado = {"ok": True, "mensaje": "Guardada."}
-        with patch("builtins.input", return_value="salir"):
-            with patch("comandos.guardar_partida", return_value=guardado):
-                with redirect_stdout(salida):
-                    iniciar_juego()
-
-        self.assertIn("FORGE OS", salida.getvalue())
-        self.assertIn("Saliendo del juego", salida.getvalue())
 
     def test_fabricar_producto_valido(self):
         inventario["lingotes"] = 3
