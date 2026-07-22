@@ -32,6 +32,9 @@ python main.py
 | `automatizacion desactivar` | Desactiva la automatización. |
 | `mejoras` | Muestra niveles, efectos y próximas mejoras. |
 | `mejorar <maquina>` | Mejora un tipo completo de máquina. |
+| `guardar` | Guarda el progreso en `datos.json`. |
+| `cargar` | Recupera la partida guardada. |
+| `nueva partida confirmar` | Restaura todos los valores iniciales. |
 | `fundir` | Inicia la fundición interactiva. |
 | `fundir <cantidad> <recurso>` | Funde una cantidad concreta. |
 | `fabricar <cantidad> <producto>` | Fabrica placas o engranajes. |
@@ -54,6 +57,8 @@ automatizacion activar
 turno
 mejoras
 mejorar mina hierro
+guardar
+cargar
 ```
 
 La fundición manual con `fundir` siempre está disponible. De forma opcional,
@@ -84,6 +89,17 @@ La mejora requiere dinero y materiales. La operación es atómica: si falta
 algún requisito, no se descuenta nada ni cambia el nivel. Las máquinas nuevas
 heredan automáticamente el nivel vigente de su tipo.
 
+## Guardado de partidas
+
+`guardar` conserva inventario, máquinas, dinero, energía, automatización y
+niveles en `datos.json`. `cargar` restaura ese estado después de validarlo. Al
+salir se realiza un guardado automático; al iniciar, FORGE OS avisa si existe
+una partida sin cargarla automáticamente.
+
+El archivo se guarda localmente junto al proyecto, usa JSON legible y está
+excluido de Git. `nueva partida confirmar` reinicia todo el progreso; escribir
+solo `nueva partida` muestra la confirmación necesaria sin modificar estado.
+
 ## Estructura del proyecto
 
 ```text
@@ -93,6 +109,7 @@ juego.py        Lógica de turnos, fundición y fabricación
 energia.py      Cálculo y asignación de energía
 automatizacion.py Estado opcional de automatización
 mejoras.py       Niveles y operaciones de mejora
+persistencia.py  Guardado, validación y carga atómica
 inventario.py   Estado y operaciones del inventario
 maquinas.py     Construcción y estado de las máquinas
 recetas.py      Definición de recetas

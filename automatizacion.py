@@ -27,6 +27,10 @@ def automatizacion_activa():
     return _automatizacion_habilitada
 
 
+def reiniciar_automatizacion():
+    return desactivar_automatizacion()
+
+
 def obtener_estado_automatizacion():
     return {
         "activa": _automatizacion_habilitada,

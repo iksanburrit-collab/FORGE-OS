@@ -1,12 +1,26 @@
 from config import COSTOS_CONSTRUCCION, obtener_nombre
 from inventario import inventario
 
-maquinas = {
+MAQUINAS_INICIALES = {
     "mina_hierro": 1,
     "mina_carbon": 1,
     "fundidora": 1,
     "generador_carbon": 1,
 }
+
+maquinas = MAQUINAS_INICIALES.copy()
+
+
+def reiniciar_maquinas():
+    maquinas.clear()
+    maquinas.update(MAQUINAS_INICIALES)
+    return maquinas.copy()
+
+
+def restaurar_maquinas(nuevas_maquinas):
+    maquinas.clear()
+    maquinas.update(nuevas_maquinas)
+    return maquinas.copy()
 
 
 def mostrar_maquinas(mostrar=True):

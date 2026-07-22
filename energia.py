@@ -34,6 +34,11 @@ def establecer_energia_almacenada(cantidad):
     energia_almacenada = max(0, cantidad)
 
 
+def reiniciar_energia():
+    establecer_energia_almacenada(ENERGIA_INICIAL)
+    return energia_almacenada
+
+
 def generar_energia(maquinas, inventario):
     generadores = maquinas.get("generador_carbon", 0)
     carbon_disponible = inventario.get("carbon", 0)
@@ -79,7 +84,10 @@ def distribuir_energia(maquinas, energia_disponible=None):
     for tipo in PRIORIDAD_ENERGIA:
         construidas = maquinas.get(tipo, 0)
         consumo_unitario = CONSUMO_ENERGIA[tipo]
-        activas = min(construidas, energia_restante // consumo_unitario)
+        activas = min(
+            construidas,
+            int(energia_restante // consumo_unitario),
+        )
         sin_energia = construidas - activas
 
         maquinas_activas[tipo] = activas

@@ -17,6 +17,7 @@ from mercado import (
     vender,
 )
 from mejoras import mejorar_maquina, obtener_reporte_mejoras
+from persistencia import cargar_partida, guardar_partida, nueva_partida
 from juego import avanzar_turno, fabricar, fundir, mostrar_recetas
 
 
@@ -50,6 +51,9 @@ def mostrar_ayuda():
     print(" - automatizacion desactivar: Desactivar la automatización")
     print(" - mejoras: Mostrar niveles, efectos y costos de mejora")
     print(" - mejorar <maquina>: Mejorar todas las máquinas de ese tipo")
+    print(" - guardar: Guardar la partida")
+    print(" - cargar: Cargar la partida guardada")
+    print(" - nueva partida confirmar: Reiniciar todo el progreso")
     print(" - ayuda: Mostrar esta ayuda")
     print(" - salir: Salir del juego")
 
@@ -119,6 +123,19 @@ def procesar_comando(comando):
         tipo = normalizar_clave(" ".join(partes[1:]))
         reporte = mejorar_maquina(tipo)
         mostrar_resultado_mejora(reporte)
+    elif comando == "guardar":
+        print(guardar_partida()["mensaje"])
+    elif comando == "cargar":
+        print(cargar_partida()["mensaje"])
+    elif comando == "nueva partida confirmar":
+        print(nueva_partida()["mensaje"])
+    elif comando == "nueva partida":
+        print(
+            "Esta acción borrará el progreso actual. "
+            "Usa: nueva partida confirmar"
+        )
+    elif comando.startswith("nueva partida"):
+        print("Formato inválido. Usa: nueva partida confirmar")
     elif comando.startswith("fabricar"):
         partes = comando.split()
         if len(partes) != 3:
@@ -191,6 +208,11 @@ def procesar_comando(comando):
     elif comando == "ayuda":
         mostrar_ayuda()
     elif comando == "salir":
+        resultado_guardado = guardar_partida()
+        if resultado_guardado["ok"]:
+            print("Partida guardada automáticamente.")
+        else:
+            print(resultado_guardado["mensaje"])
         print("Saliendo del juego...")
         return False
     else:

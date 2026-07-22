@@ -1,12 +1,26 @@
 from config import obtener_nombre
 
-inventario = {
+INVENTARIO_INICIAL = {
     "hierro": 0,
     "carbon": 0,
     "lingotes": 0,
     "engranajes": 0,
     "placas": 0,
 }
+
+inventario = INVENTARIO_INICIAL.copy()
+
+
+def reiniciar_inventario():
+    inventario.clear()
+    inventario.update(INVENTARIO_INICIAL)
+    return inventario.copy()
+
+
+def restaurar_inventario(nuevo_inventario):
+    inventario.clear()
+    inventario.update(nuevo_inventario)
+    return inventario.copy()
 
 
 def mostrar_inventario(mostrar=True):

@@ -20,8 +20,11 @@ class ValidacionRecetasTests(unittest.TestCase):
 
     def test_arranque_y_salida(self):
         salida = StringIO()
-        with patch("builtins.input", return_value="salir"), redirect_stdout(salida):
-            iniciar_juego()
+        guardado = {"ok": True, "mensaje": "Guardada."}
+        with patch("builtins.input", return_value="salir"):
+            with patch("comandos.guardar_partida", return_value=guardado):
+                with redirect_stdout(salida):
+                    iniciar_juego()
 
         self.assertIn("FORGE OS", salida.getvalue())
         self.assertIn("Saliendo del juego", salida.getvalue())

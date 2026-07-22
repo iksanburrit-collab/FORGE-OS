@@ -3,11 +3,23 @@ from inventario import inventario
 from maquinas import maquinas
 
 
-dinero = 0
+SALDO_INICIAL = 0
+dinero = SALDO_INICIAL
 
 
 def obtener_saldo():
     return dinero
+
+
+def establecer_saldo(nuevo_saldo):
+    global dinero
+
+    dinero = nuevo_saldo
+    return dinero
+
+
+def reiniciar_saldo():
+    return establecer_saldo(SALDO_INICIAL)
 
 
 def mostrar_saldo(mostrar=True):

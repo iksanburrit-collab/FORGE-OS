@@ -10,12 +10,26 @@ from config import (
 from inventario import inventario
 
 
-niveles_maquinas = {
+NIVELES_INICIALES = {
     "mina_hierro": 1,
     "mina_carbon": 1,
     "fundidora": 1,
     "generador_carbon": 1,
 }
+
+niveles_maquinas = NIVELES_INICIALES.copy()
+
+
+def reiniciar_mejoras():
+    niveles_maquinas.clear()
+    niveles_maquinas.update(NIVELES_INICIALES)
+    return niveles_maquinas.copy()
+
+
+def restaurar_mejoras(nuevos_niveles):
+    niveles_maquinas.clear()
+    niveles_maquinas.update(nuevos_niveles)
+    return niveles_maquinas.copy()
 
 
 def obtener_nivel(tipo):

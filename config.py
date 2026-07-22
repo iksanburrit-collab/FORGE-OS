@@ -1,3 +1,5 @@
+VERSION_JUEGO = "0.8"
+
 COSTOS_CONSTRUCCION = {
     "mina_hierro": 3,
     "mina_carbon": 2,
